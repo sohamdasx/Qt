@@ -132,37 +132,22 @@ if st.button("🚀 Run Daily Autonomous Scan"):
                     "dossier_json": dossier 
                 }
                 
-                # (Inside your main try block)
                 try:
                     supabase.table('recommendations').insert(db_payload).execute()
                 except Exception as e:
                     st.warning(f"Failed to save {ticker} to database: {e}")
                     
-                # THIS LINE MUST BE INDENTED TO MATCH THE 'try' ABOVE IT
+                # THIS IS THE SAFE APPEND: It only runs if everything above succeeds!
                 final_dossiers.append({"symbol": ticker, "dossier": dossier})
                 
             except Exception as e:
                 # If Groq crashes, print the error but keep the app alive
                 st.error(f"⚠️ AI Analyst failed to process {ticker} due to an API Error: {e}")
             
-            # Take a 5-second breath OUTSIDE the try/except blocks
+            # Take a 15-second breath safely OUTSIDE the try/except blocks
+            import time
             time.sleep(15)
-                
-            final_dossiers.append({"symbol": ticker, "dossier": dossier})
-        ticker = candidate["symbol"]
-        with st.spinner(f"Lead Analyst is reviewing {ticker}..."):
-            
-            # --- NEW: Pass the ticker_id into the AI's state ---
-            initial_state = {
-                "symbol": ticker,
-                "ticker_id": candidate["ticker_id"], # <--- ADD THIS LINE
-                "quant_metrics": candidate["metrics"],
-                "retrieved_news": [],
-                "final_dossier": {}
-            }
-            
-            final_state = app.invoke(initial_state)
-            dossier = final_state["final_dossier"]
+
     # --- PHASE 4: THE DASHBOARD DISPLAY ---
     st.divider()
     st.header("🏆 Today's Top Investment Recommendations")
