@@ -40,18 +40,23 @@ def researcher_agent(state: AgentState):
     if resp.data:
         for i, row in enumerate(resp.data[:5]):
             head = str(row.get('headline', ''))[:200]
-            snip = str(row.get('snippet', ''))[:400]
+            raw_snip = str(row.get('snippet', ''))
             
-            # Extract the real URL and strip it out of the text
+            # 1. Extract the full, uncut URL FIRST
             url = "#"
-            if "Source URL: " in snip:
-                parts = snip.split("Source URL: ")
-                snip = parts[0].strip()
-                url = parts[1].strip()
+            if "Source URL: " in raw_snip:
+                parts = raw_snip.split("Source URL: ")
+                snip_text = parts[0].strip()
+                url = parts[1].strip() # Saves the entire, uncut URL safely!
+            else:
+                snip_text = raw_snip
+                
+            # 2. NOW we safely truncate the text to protect the AI's token limit
+            safe_snip = snip_text[:250]
             
             source_id = f"Source_{i+1}"
-            news_string += f"[{source_id}] Headline: {head} | Context: {snip}\n"
-            url_map[source_id] = url # Save real URL to Python memory
+            news_string += f"[{source_id}] Headline: {head} | Context: {safe_snip}\n"
+            url_map[source_id] = url # Hide the uncut URL in Python memory
     else:
         news_string = "No recent news context available in the vault."
         
