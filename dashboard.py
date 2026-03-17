@@ -7,7 +7,8 @@ from supabase import create_client, Client
 import yfinance as yf
 import plotly.graph_objects as go
 import time
-import pandas as pd
+import json          # <-- NEW
+import pandas as pd  # <-- NEW
 
 # 1. Initialization
 load_dotenv()
@@ -21,6 +22,67 @@ from agentic_analyst import build_analyst_graph
 st.set_page_config(page_title="BSE Agentic Quant", layout="wide", page_icon="📈")
 st.title("📈 Autonomous Agentic Quant Desk")
 st.markdown("Initiate the daily scan to automatically discover and analyze breakout BSE stocks.")
+
+# The hidden file where we will store the master list
+POOL_FILE = "master_pool.json"
+
+st.divider()
+st.subheader("🎛️ Desk Control Panel")
+
+# Create two columns to put the buttons side-by-side
+col1, col2 = st.columns(2)
+
+# --- BUTTON 1: THE DATA UPDATER ---
+with col1:
+    if st.button("🔄 1. Update Master Market List", use_container_width=True):
+        with st.spinner("Downloading live equities list from the National Stock Exchange..."):
+            try:
+                # Scrape the official list
+                url = "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv"
+                df = pd.read_csv(url)
+                df = df[df['SERIES'] == 'EQ']
+                tickers = df['SYMBOL'].astype(str) + ".NS"
+                ticker_list = tickers.tolist()
+                
+                # Save it silently to the server's local file system
+                with open(POOL_FILE, "w") as f:
+                    json.dump(ticker_list, f)
+                    
+                st.success(f"✅ Master list updated! {len(ticker_list)} live stocks saved to server cache.")
+            except Exception as e:
+                st.error(f"⚠️ Failed to reach the Exchange servers: {e}")
+
+# --- BUTTON 2: THE AI SCANNER ---
+with col2:
+    if st.button("🚀 2. Run Daily Autonomous Scan", type="primary", use_container_width=True):
+        
+        # 1. Guardrail: Ensure the master list exists before scanning!
+        if not os.path.exists(POOL_FILE):
+            st.error("⚠️ Master list is empty! Please click 'Update Master Market List' first.")
+            st.stop()
+            
+        # 2. Load the massive list out of the hidden JSON file
+        with open(POOL_FILE, "r") as f:
+            MARKET_POOL = json.load(f)
+            
+        st.divider()
+        
+        # 3. Pull our 15 random stocks
+        BASKET = random.sample(MARKET_POOL, 15)
+        st.info(f"🎲 Randomly selected 15 stocks from a pool of {len(MARKET_POOL)}: {', '.join([t.replace('.NS', '') for t in BASKET])}")
+        
+        candidates = [] 
+        
+        # --- THREAD 1: THE QUANTITATIVE SIFTER ---
+        st.subheader("⚙️ Phase 1: Market-Wide Quantitative Sifting")
+        my_bar = st.progress(0, text="Initializing scanners...")
+        
+        for i, ticker in enumerate(BASKET):
+            # (Your existing Sifter loop code stays exactly the same from here down!)
+            my_bar.progress((i + 1) / len(BASKET), text=f"Checking momentum for {ticker} ({i+1}/15)...")
+            
+            request = TickerRequest(symbol=ticker)
+            sift_result = asyncio.run(sift_single_stock(request)) 
 
 # 3. The Dynamic Master Market Pool
 @st.cache_data(ttl=86400)  # Cache the data for 24 hours so we don't spam the exchange
