@@ -50,4 +50,10 @@ async def sift_single_stock(request: TickerRequest):
         }
 
     except Exception as e:
-         raise HTTPException(status_code=500, detail=str(e))
+         # Instead of crashing the whole app, we gracefully reject the stock
+         # and pass the error message back so we can see what went wrong!
+         return {
+             "symbol": request.symbol, 
+             "is_candidate": False, 
+             "reason": f"Sifter Error: {str(e)}"
+         }
