@@ -105,6 +105,38 @@ if st.button("🚀 Run Daily Autonomous Scan"):
     for candidate in candidates:
         ticker = candidate["symbol"]
         with st.spinner(f"Lead Analyst is reviewing {ticker}..."):
+            initial_state = {
+                "symbol": ticker,
+                "ticker_id": candidate["ticker_id"],
+                "quant_metrics": candidate["metrics"],
+                "retrieved_news": [],
+                "final_dossier": {}
+            }
+            final_state = app.invoke(initial_state)
+            
+            # --- THE FIX: Convert the AI Object into a standard Dictionary ---
+            dossier_obj = final_state["final_dossier"]
+            # This safely converts it whether it's Pydantic v1, v2, or already a dict
+            dossier = dossier_obj.dict() if hasattr(dossier_obj, "dict") else dossier_obj
+            
+            # Save to database
+            db_payload = {
+                "ticker_id": candidate["ticker_id"], 
+                "signal": dossier.get("signal"),
+                "confidence_score": dossier.get("confidence_score"),
+                "entry_price": dossier.get("entry_price"),
+                "exit_price": dossier.get("exit_price"),
+                "dossier_json": dossier 
+            }
+            
+            try:
+                supabase.table('recommendations').insert(db_payload).execute()
+            except Exception as e:
+                st.error(f"Failed to save to database: {e}")
+                
+            final_dossiers.append({"symbol": ticker, "dossier": dossier})
+        ticker = candidate["symbol"]
+        with st.spinner(f"Lead Analyst is reviewing {ticker}..."):
             
             # --- NEW: Pass the ticker_id into the AI's state ---
             initial_state = {
