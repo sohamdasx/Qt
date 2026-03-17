@@ -30,22 +30,42 @@ ticker = st.text_input("BSE Ticker Symbol", "TCS.BO")
 # 5. Create the Execution Button
 if st.button("Deploy AI Analyst"):
     
-    # --- PHASE 2: SIFTER UI ---
+    # --- PHASE 2: SIFTER UI (REMOVED THE BYPASS) ---
     with st.spinner(f"Running Quant Sifter for {ticker}..."):
-        # Wrap async call for Streamlit
         async def run_pipeline():
             request = TickerRequest(symbol=ticker)
             return await sift_single_stock(request)
         
         sift_result = asyncio.run(run_pipeline())
         
-        # (Forcing the bypass for our demo so we always get an AI report)
-        sift_result["is_candidate"] = True
-        if "metrics" not in sift_result:
-            sift_result["metrics"] = {"close": 3500, "ema_200": 3400, "vol_z_score": 2.5}
+        # REAL MATH CHECK: If the stock fails the momentum test, stop the app!
+        if not sift_result.get("is_candidate"):
+            st.error(f"❌ {ticker} failed the quantitative filter. Price is below 200 EMA or Volume is low.")
+            st.stop() # This halts the entire Streamlit script. No AI money wasted!
 
-    st.success("✅ Passed Quantitative Filter!")
+    st.success("✅ Passed Quantitative Filter! Strong Momentum Detected.")
     st.json(sift_result["metrics"])
+
+    # --- NEW: DYNAMIC DATABASE REGISTRATION ---
+    with st.spinner("Checking Master Directory..."):
+        # Check if the ticker exists in our database
+        resp = supabase.table('tickers').select('ticker_id').eq('symbol', ticker).execute()
+        
+        if len(resp.data) > 0:
+            db_ticker_id = resp.data[0]['ticker_id']
+        else:
+            # If it doesn't exist, insert it automatically!
+            insert_resp = supabase.table('tickers').insert({"symbol": ticker, "sector": "Auto-Added"}).execute()
+            db_ticker_id = insert_resp.data[0]['ticker_id']
+
+    # --- PHASE 3: SCAVENGER UI (USING REAL NEWS) ---
+    with st.spinner("Scavenging & Vectorizing Live News..."):
+        async def run_scavenger():
+            # Pass our dynamic db_ticker_id instead of a hardcoded 1
+            await process_and_store_news(ticker, ticker_id=db_ticker_id)
+        asyncio.run(run_scavenger())
+    
+    st.success("✅ Live News Vectorized and Stored in Supabase!")
 
     # --- PHASE 3: SCAVENGER UI ---
     with st.spinner("Scavenging & Vectorizing News..."):
@@ -55,7 +75,6 @@ if st.button("Deploy AI Analyst"):
     
     st.success("✅ News Vectorized and Stored in Supabase!")
 
-    # --- PHASE 4: ANALYST UI ---
     # --- PHASE 4: ANALYST UI ---
     with st.spinner("Lead Analyst is writing the dossier..."):
         app = build_analyst_graph()

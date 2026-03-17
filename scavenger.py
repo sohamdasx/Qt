@@ -3,6 +3,7 @@ import httpx
 import os
 from sentence_transformers import SentenceTransformer
 from supabase import create_client, Client
+import yfinance as yf
 
 # 1. Initialize Supabase Client and the local Embedding Model
 supabase_url = os.environ.get("SUPABASE_URL")
@@ -12,22 +13,33 @@ supabase: Client = create_client(supabase_url, supabase_key)
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 async def fetch_news_for_ticker(symbol: str) -> list:
-    # 2. Open an asynchronous HTTP session
-    async with httpx.AsyncClient() as client:
-        # Note: Replace this URL with a real financial news API (e.g., NewsAPI, AlphaVantage)
-        url = f"https://mock-news-api.com/v1/search?q={symbol}&apikey=SECRET"
+    print(f"Fetching LIVE news for {symbol}...")
+    
+    # 1. Fetch live news using yfinance
+    stock = yf.Ticker(symbol)
+    raw_news = stock.news
+    
+    articles = []
+    
+    # 2. Extract the top 5 most recent articles
+    for item in raw_news[:5]:
+        # yfinance news doesn't always have a snippet, so we use the publisher as context
+        headline = item.get("title", "No Title Available")
+        publisher = item.get("publisher", "Unknown Publisher")
         
-        # 3. Yield control back to the event loop while waiting for the network
-        # response = await client.get(url)
-        # articles = response.json().get('articles', [])
+        articles.append({
+            "headline": headline,
+            "snippet": f"Published by {publisher}."
+        })
         
-        # Mocking the response for the sake of the example
-        articles = [
-            {"headline": f"{symbol} secures major government contract", "snippet": "The new deal is expected to boost Q4 revenues significantly."},
-            {"headline": f"Insider buying detected at {symbol}", "snippet": "CEO purchases 50,000 shares on the open market."}
-        ]
-        return articles
-
+    # 3. Fallback if the stock has no recent news
+    if not articles:
+        articles.append({
+            "headline": f"No recent news found for {symbol}.",
+            "snippet": "Market is currently quiet regarding this ticker."
+        })
+        
+    return articles
 async def process_and_store_news(symbol: str, ticker_id: int):
     # 4. Fetch the articles
     articles = await fetch_news_for_ticker(symbol)
