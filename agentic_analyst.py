@@ -68,7 +68,7 @@ def lead_analyst_agent(state: AgentState):
     llm = ChatGroq(
         model="llama-3.1-8b-instant", 
         temperature=0.1,
-        max_tokens=800
+        max_tokens=1500
     )
 
     structured_llm = llm.with_structured_output(InvestmentDossier)
