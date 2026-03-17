@@ -1,6 +1,7 @@
 import os
 from typing import TypedDict, List
 from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate # <-- The missing piece!
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, END
 from supabase import create_client, Client
