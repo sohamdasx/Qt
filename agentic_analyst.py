@@ -32,8 +32,8 @@ class AgentState(TypedDict):
 def researcher_agent(state: AgentState):
     print(f"🕵️ Researcher: Searching news vault for {state['symbol']} (ID: {state['ticker_id']})...")
     
-    # Query the database for the news we just scraped
-    resp = supabase.table("news_vault").select("headline, snippet").eq("ticker_id", state["ticker_id"]).execute()
+    # Query the database, but STRICTLY limit it to the 5 most recent articles!
+    resp = supabase.table("news_vault").select("headline, snippet").eq("ticker_id", state["ticker_id"]).order("id", desc=True).limit(5).execute()
     
     news_items = []
     if resp.data:

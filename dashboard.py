@@ -146,7 +146,7 @@ if st.button("🚀 Run Daily Autonomous Scan"):
                 st.error(f"⚠️ AI Analyst failed to process {ticker} due to an API Error: {e}")
             
             # Take a 5-second breath OUTSIDE the try/except blocks
-            time.sleep(5)
+            time.sleep(15)
                 
             final_dossiers.append({"symbol": ticker, "dossier": dossier})
         ticker = candidate["symbol"]
