@@ -82,8 +82,8 @@ if scan_clicked:
         
     st.divider()
     
-    BASKET = random.sample(MARKET_POOL, min(15, len(MARKET_POOL)))
-    st.info(f"🎲 Randomly selected 15 stocks from a pool of {len(MARKET_POOL)}: {', '.join([t.replace('.NS', '') for t in BASKET])}")
+    BASKET = random.sample(MARKET_POOL, min(50, len(MARKET_POOL)))
+    st.info(f"🎲 Randomly selected 50 stocks from a pool of {len(MARKET_POOL)}: {', '.join([t.replace('.NS', '') for t in BASKET])}")
     
     candidates = [] 
     
@@ -91,7 +91,7 @@ if scan_clicked:
     my_bar = st.progress(0, text="Initializing scanners...")
     
     for i, ticker in enumerate(BASKET):
-        my_bar.progress((i + 1) / len(BASKET), text=f"Checking momentum for {ticker} ({i+1}/15)...")
+        my_bar.progress((i + 1) / len(BASKET), text=f"Checking momentum for {ticker} ({i+1}/50)...")
         
         request = TickerRequest(symbol=ticker)
         sift_result = asyncio.run(sift_single_stock(request))
@@ -101,10 +101,10 @@ if scan_clicked:
             candidates.append({"symbol": ticker, "metrics": sift_result["metrics"]})
         
     if not candidates:
-        st.warning("All 15 stocks failed the quantitative filter today. The market is quiet. Try scanning again!")
+        st.warning("All 50 stocks failed the quantitative filter today. The market is quiet. Try scanning again!")
         st.stop()
         
-    st.write(f"✅ Sifter complete. {len(candidates)} out of 15 stocks passed to the AI Analyst.")
+    st.write(f"✅ Sifter complete. {len(candidates)} out of 50 stocks passed to the AI Analyst.")
 
     st.divider()
     st.subheader("📰 Phase 2: Contextual News Scavenging")
@@ -168,7 +168,7 @@ if scan_clicked:
             except Exception as e:
                 st.error(f"⚠️ AI Analyst failed to process {ticker} due to an API Error: {e}")
             
-            time.sleep(15)
+            time.sleep(10)
 
     st.divider()
     st.header("🏆 Today's Top Investment Recommendations")
