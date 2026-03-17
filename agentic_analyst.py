@@ -32,6 +32,28 @@ class AgentState(TypedDict):
 def researcher_agent(state: AgentState):
     print(f"🕵️ Researcher: Searching news vault for {state['symbol']} (ID: {state['ticker_id']})...")
     
+    # Query the database (with the limit 5 safeguard)
+    resp = supabase.table("news_vault").select("headline, snippet").eq("ticker_id", state["ticker_id"]).order("id", desc=True).limit(5).execute()
+    
+    news_string = ""
+    
+    if resp.data:
+        # Python-level backup limit: Strictly process only 5 rows
+        for row in resp.data[:5]:
+            # Cleanse the data: Chop off abnormally long headlines (max 200 chars) or snippets (max 400 chars)
+            head = str(row.get('headline', ''))[:200]
+            snip = str(row.get('snippet', ''))[:400]
+            news_string += f"Headline: {head} | Context: {snip}\n"
+    else:
+        news_string = "No recent news context available in the vault."
+        
+    # THE IRONCLAD WALL: Force the total final prompt payload to be under 2,500 characters (approx 600 tokens).
+    # If the database returns 10,000 words of junk, Python slices it down to the safe limit instantly.
+    safe_news = news_string[:2500]
+        
+    return {"retrieved_news": [safe_news]}
+    print(f"🕵️ Researcher: Searching news vault for {state['symbol']} (ID: {state['ticker_id']})...")
+    
     # Query the database, but STRICTLY limit it to the 5 most recent articles!
     resp = supabase.table("news_vault").select("headline, snippet").eq("ticker_id", state["ticker_id"]).order("id", desc=True).limit(5).execute()
     
