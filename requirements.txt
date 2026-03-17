@@ -9,3 +9,4 @@ pydantic
 fastapi
 sentence-transformers
 httpx
+plotly

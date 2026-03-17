@@ -86,6 +86,54 @@ if st.button("Deploy AI Analyst"):
                 st.error(f"Database Error: {e}")
     
     # --- PHASE 5: THE FINAL DISPLAY ---
+    # --- NEW: VISUALIZATION UI ---
+    st.divider()
+    st.subheader(f"📊 Quantitative X-Ray: {ticker}")
+    
+    with st.spinner("Rendering interactive charts..."):
+        # 1. Fetch 1 year of historical data specifically for the chart
+        chart_data = yf.Ticker(ticker).history(period="1y")
+        
+        # 2. Re-calculate the 200 EMA so we can draw it on the screen
+        chart_data['EMA_200'] = chart_data['Close'].ewm(span=200, adjust=False).mean()
+        
+        # 3. Initialize the Plotly Figure
+        fig = go.Figure()
+        
+        # 4. Add the Candlestick trace (The actual stock price)
+        fig.add_trace(go.Candlestick(
+            x=chart_data.index,
+            open=chart_data['Open'],
+            high=chart_data['High'],
+            low=chart_data['Low'],
+            close=chart_data['Close'],
+            name='Price Action'
+        ))
+        
+        # 5. Add the 200 EMA trace (The Trendline)
+        fig.add_trace(go.Scatter(
+            x=chart_data.index, 
+            y=chart_data['EMA_200'], 
+            mode='lines', 
+            name='200-Day EMA', 
+            line=dict(color='orange', width=2)
+        ))
+        
+        # 6. Format the layout to look like a dark-mode Bloomberg terminal
+        fig.update_layout(
+            template="plotly_dark",
+            xaxis_title="Date",
+            yaxis_title="Price (₹)",
+            xaxis_rangeslider_visible=False, # Hides the bulky slider at the bottom
+            height=500,
+            margin=dict(l=0, r=0, t=30, b=0)
+        )
+        
+        # 7. Render it in Streamlit
+        st.plotly_chart(fig, use_container_width=True)
+
+    # --- PHASE 5: THE FINAL DOSSIER DISPLAY ---
+    # (Keep your existing Phase 5 code below this point)
     st.divider()
     st.subheader(f"Final Investment Dossier: {ticker}")
     
