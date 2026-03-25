@@ -26,7 +26,7 @@ The Autonomous Agentic Quant Desk is an end-to-end, multi-agent algorithmic trad
 
 - Built on **Streamlit**, featuring memory-managed sequential scanning (100 stocks at a time) and uncorrupted, cleanly mapped markdown citations.
 
-<a href="https://shotockmarket.streamlit.app/">
+<a href="https://triboulet.streamlit.app/">
   <img src="screenshot.png" alt="App Screenshot" width="600">
 </a>
 

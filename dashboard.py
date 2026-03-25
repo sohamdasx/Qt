@@ -18,27 +18,80 @@ from sifter import TickerRequest, sift_single_stock
 from scavenger import process_and_store_news
 from agentic_analyst import build_analyst_graph
 
-# 2. UI Setup
-st.set_page_config(page_title="BSE Agentic Quant", layout="wide", page_icon="📈")
-st.title("📈 Autonomous Agentic Quant Desk")
-st.markdown("Initiate the daily scan to automatically discover and analyze breakout Indian stocks.")
+# 2. UI Setup & Custom CSS Injection
+st.set_page_config(page_title="Agentic Quant", layout="wide", page_icon="⚡")
 
-# The hidden file where we will store the master list
+# --- THE PREMIUM FINTECH CSS ---
+st.markdown("""
+<style>
+    /* Main Background & Font tweaks */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    
+    /* Sleek Headers */
+    h1, h2, h3 {
+        font-family: 'Helvetica Neue', sans-serif;
+        font-weight: 600 !important;
+        letter-spacing: -0.5px;
+    }
+    
+    /* Premium Metric Cards */
+    [data-testid="stMetric"] {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 15px 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Clean Expanders */
+    .streamlit-expanderHeader {
+        font-size: 1.1rem;
+        font-weight: 500;
+        border-radius: 8px;
+    }
+    
+    /* Button Hover Effects */
+    .stButton>button {
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 75, 75, 0.2);
+        border-color: #ff4b4b;
+    }
+    
+    /* Primary Button Gradient */
+    button[data-testid="baseButton-primary"] {
+        background: linear-gradient(135deg, #ff4b4b 0%, #ff8a8a 100%);
+        border: none;
+    }
+    button[data-testid="baseButton-primary"]:hover {
+        background: linear-gradient(135deg, #ff2b2b 0%, #ff6a6a 100%);
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.title("⚡ Autonomous Agentic Quant Desk")
+st.markdown("<p style='color: #888; font-size: 1.1rem;'>Initiate the daily scan to automatically discover and analyze breakout Indian equities.</p>", unsafe_allow_html=True)
+
 POOL_FILE = "master_pool.json"
 
-# --- NEW: Initialize the bookmark to track our sequential position ---
 if 'scan_index' not in st.session_state:
     st.session_state.scan_index = 0
 
 st.divider()
 st.subheader("🎛️ Desk Control Panel")
 
-# Create the columns for the buttons
 col1, col2 = st.columns(2)
 update_clicked = col1.button("🔄 1. Update Master Market List", use_container_width=True)
 scan_clicked = col2.button("🚀 2. Run Daily Autonomous Scan", type="primary", use_container_width=True)
 
-# --- BUTTON 1: THE DATA UPDATER (Runs Full Width) ---
+# --- BUTTON 1: THE DATA UPDATER ---
 if update_clicked:
     with st.spinner("Downloading live equities list from the Exchange..."):
         try:
@@ -76,7 +129,7 @@ if update_clicked:
             
         st.success(f"✅ Master list updated! {len(ticker_list)} live stocks saved to server cache.")
 
-# --- BUTTON 2: THE AI SCANNER (Runs Full Width) ---
+# --- BUTTON 2: THE AI SCANNER ---
 if scan_clicked:
     if not os.path.exists(POOL_FILE):
         st.error("⚠️ Master list is empty! Please click 'Update Master Market List' first.")
@@ -87,20 +140,17 @@ if scan_clicked:
         
     st.divider()
     
-# --- THE SEQUENTIAL ENGINE ---
     start_idx = st.session_state.scan_index
     end_idx = start_idx + 100
     
-    # Slice the next 100 stocks (and wrap around to the beginning if we hit the end of the 2000+ list)
     if end_idx > len(MARKET_POOL):
         BASKET = MARKET_POOL[start_idx:] + MARKET_POOL[:(end_idx - len(MARKET_POOL))]
     else:
         BASKET = MARKET_POOL[start_idx:end_idx]
         
-    # Save the new index so the next click picks up exactly where this one left off!
     st.session_state.scan_index = end_idx % len(MARKET_POOL)
     
-    st.info(f"📊 Scanning sequential batch: Stocks {start_idx + 1} to {start_idx + 100} (Total Pool: {len(MARKET_POOL)}).")
+    st.info(f"📊 Scanning sequential batch: Stocks **{start_idx + 1}** to **{start_idx + 100}** (Total Pool: {len(MARKET_POOL)}).")
     
     candidates = [] 
     
@@ -108,20 +158,20 @@ if scan_clicked:
     my_bar = st.progress(0, text="Initializing scanners...")
     
     for i, ticker in enumerate(BASKET):
-        my_bar.progress((i + 1) / len(BASKET), text=f"Checking momentum for {ticker} ({i+1}/50)...")
+        my_bar.progress((i + 1) / len(BASKET), text=f"Checking momentum for {ticker} ({i+1}/100)...")
         
         request = TickerRequest(symbol=ticker)
         sift_result = asyncio.run(sift_single_stock(request))
         
         if sift_result.get("is_candidate"):
-            st.success(f"🔥 {ticker} Passed! Anomalous momentum detected.")
+            st.success(f"🔥 **{ticker}** Passed! Anomalous momentum detected.")
             candidates.append({"symbol": ticker, "metrics": sift_result["metrics"]})
         
     if not candidates:
-        st.warning("All 50 stocks failed the quantitative filter today. The market is quiet. Try scanning again!")
+        st.warning("All 100 stocks failed the quantitative filter today. The market is quiet in this sector. Try scanning the next batch!")
         st.stop()
         
-    st.write(f"✅ Sifter complete. {len(candidates)} out of 50 stocks passed to the AI Analyst.")
+    st.write(f"✅ Sifter complete. **{len(candidates)}** out of 100 stocks passed to the AI Analyst.")
 
     st.divider()
     st.subheader("📰 Phase 2: Contextual News Scavenging")
@@ -140,7 +190,7 @@ if scan_clicked:
             candidate["ticker_id"] = db_ticker_id 
             
             asyncio.run(process_and_store_news(ticker, ticker_id=db_ticker_id))
-        st.success(f"News vectorized for {ticker}")
+        st.success(f"News vectorized for **{ticker}**")
 
     st.divider()
     st.subheader("🤖 Phase 3: Agentic Analysis & Dossier Generation")
@@ -185,7 +235,7 @@ if scan_clicked:
             except Exception as e:
                 st.error(f"⚠️ AI Analyst failed to process {ticker} due to an API Error: {e}")
             
-            time.sleep(10)
+            time.sleep(15)
 
     st.divider()
     st.header("🏆 Today's Top Investment Recommendations")
@@ -193,19 +243,32 @@ if scan_clicked:
     for item in final_dossiers:
         ticker = item["symbol"]
         dossier = item["dossier"]
+        signal = dossier.get("signal", "HOLD").upper()
         
-        with st.expander(f"{dossier.get('signal', 'HOLD')} | {ticker} (Confidence: {int(dossier.get('confidence_score', 0)*100)}%)", expanded=True):
+        # Color coding the Signal icon
+        if signal == "BUY":
+            status_icon = "🟢"
+        elif signal == "SELL":
+            status_icon = "🔴"
+        else:
+            status_icon = "⚪"
+            
+        with st.expander(f"{status_icon} **{signal}** | {ticker} (Confidence: {int(dossier.get('confidence_score', 0)*100)}%)", expanded=True):
+            
+            # Use Streamlit's native columns for a clean card layout
             metric_col1, metric_col2, metric_col3 = st.columns(3)
-            metric_col1.metric("Signal", dossier.get("signal", "HOLD"))
+            metric_col1.metric("Action Signal", signal)
             metric_col2.metric("Entry Target", f"₹{dossier.get('entry_price', 0)}")
             metric_col3.metric("Exit Target", f"₹{dossier.get('exit_price', 0)}")
             
-            st.markdown("### 🧠 Analyst Reasoning")
-            st.info(dossier.get('reasoning', ''))
+            st.markdown("---")
+            st.markdown("#### 🧠 Analyst Reasoning")
+            # Using st.info creates a nice colored callout box for the thesis
+            st.info(dossier.get('reasoning', 'No reasoning provided.'))
             
-            st.markdown("### 📚 Source Citations")
+            st.markdown("#### 📚 Source Citations")
             for cit in dossier.get("citations", []):
                 if isinstance(cit, dict):
                     headline = cit.get("headline", "News Article")
                     url = cit.get("url", "#")
-                    st.markdown(f"- [{headline}]({url})")
+                    st.markdown(f"- 🔗 [{headline}]({url})")
