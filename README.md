@@ -1,72 +1,66 @@
-# **📈 Autonomous Agentic Quant Desk (BSE)**
+# **📈 Autonomous Agentic Quant Desk**
 
-## **📌 Overview**
+The Autonomous Agentic Quant Desk is an end-to-end, multi-agent algorithmic trading research pipeline. It actively scans the National Stock Exchange (NSE) of India, mathematically filters 2,000+ stocks for breakout momentum, scrapes real-time financial news, and utilizes a LangGraph-powered AI Agent to generate structured, strictly validated investment dossiers.
 
-The **Autonomous Agentic Quant Desk** is a modular, multi-threaded AI research system built specifically for the Bombay Stock Exchange (BSE). It mimics the workflow of a modern quantitative hedge fund by combining hard mathematical momentum filters with LLM-driven contextual narrative analysis.
+## **The Pipeline Architecture**
 
-Instead of running expensive LLM inferences on thousands of stocks, this system uses a "High-Pass" algorithmic filter to isolate anomalous market movements, asynchronously fetches and vectorizes market catalysts, and deploys a LangGraph multi-agent state machine to synthesize a highly structured investment dossier.
+### **Phase 1: Market-Wide Quantitative Sifting**
 
-## **🏗️ System Architecture**
+- Dynamically downloads the live master list of all 2,000+ traded equities on the NSE.
+- Methodically scans stocks using a high-pass filter.
+- Calculates **200-day Exponential Moving Averages (EMA)** and rolling **20-day Volume Z-Scores** to mathematically isolate highly anomalous breakout candidates.
 
-The pipeline is divided into 4 core autonomous threads:
+### **Phase 2: Contextual News Scavenging (RAG)**
 
-1. **The Quantitative Sifter (FastAPI \+ Pandas):** \- Scans historical OHLCV data via yfinance.  
-   * Applies a rigorous algorithmic filter: **Price \> 200-day EMA** (Macro Trend) and **Volume Z-Score \> 2.0** (Institutional Hype).  
-   * *Result: Rejects 99% of market noise, passing only high-probability candidates.*  
-2. **The Context Scavenger (AsyncIO \+ Sentence-Transformers):**  
-   * Asynchronously scrapes live news for stocks that pass the Sifter.  
-   * Maps news snippets into 384-dimensional mathematical space using locally hosted all-MiniLM-L6-v2.  
-   * Stores the vectors in a Supabase PostgreSQL database using the pgvector extension for semantic memory.  
-3. **The Agentic Analyst (LangGraph \+ Groq Llama-3):**  
-   * **Researcher Agent:** Performs a semantic similarity search in the Supabase vault to retrieve highly relevant context.  
-   * **Lead Analyst Agent:** Reconciles the mathematical metrics with the narrative context to output a strictly formatted JSON Investment Dossier (Signal, Confidence, Entry/Exit Targets, Reasoning).  
-4. **The Interface (Streamlit \+ Plotly):**  
-   * A dark-mode, interactive web dashboard serving as the Portfolio Manager's terminal.  
-   * Visualizes live Candlestick price action overlaid with the 200-day EMA.  
-   * Archives all AI-generated dossiers back to the Supabase database for future backtesting and compliance auditing.
+- Bypasses traditional scraping blockers to fetch real-time news via RSS.
+- Uses SentenceTransformers (all-MiniLM-L6-v2) to vectorize the financial context.
+- Stores the data in a **Supabase pgvector** database, creating a deeply searchable historical vault for the AI.
 
-## **🛠️ Tech Stack**
+### **Phase 3: Agentic Analysis (LangGraph)**
 
-* **Backend:** Python, FastAPI, AsyncIO, Pandas, yfinance  
-* **AI / Orchestration:** LangGraph, LangChain, Groq (Meta Llama 3.1 8B), Sentence-Transformers  
-* **Database:** Supabase (PostgreSQL), pgvector  
-* **Frontend:** Streamlit, Plotly
+- A multi-node AI workflow featuring a **Researcher Agent** (database querying) and a **Lead Analyst Agent** (reasoning).
+- Powered by llama-3.3-70b-versatile via **Groq** for lightning-fast inference.
+- Utilizes strict Pydantic schemas, payload truncation, and URL decoupling to protect token limits and mathematically guarantee flawless JSON output.
 
-## **🚀 Installation & Setup**
+### **Phase 4: Control Panel Dashboard**
 
-### **1\. Clone the Repository**
+- Built on **Streamlit**, featuring memory-managed sequential scanning (100 stocks at a time) and uncorrupted, cleanly mapped markdown citations.
 
-git clone \[https://github.com/yourusername/agentic-quant-desk.git\](https://github.com/yourusername/agentic-quant-desk.git)  
-cd agentic-quant-desk
+<a href="https://shotockmarket.streamlit.app/">
+  <img src="screenshot.png" alt="App Screenshot" width="600">
+</a>
 
-### **2\. Set Up the Environment**
+## **Future Roadmap & Additions**
 
-Create a virtual environment and install the required dependencies:
+This project is continuously evolving. Planned upgrades include:
 
-python \-m venv quant\_env  
-source quant\_env/bin/activate  \# On Windows: quant\_env\\Scripts\\activate  
-python \-m pip install \-r requirements.txt
+1. **Deep RAG & FinBERT Integration:** Transitioning the embedding model to FinBERT for native understanding of financial jargon, and expanding the scraper to index quarterly earnings call transcripts.
+2. **Advanced Quant Math:** Upgrading the sifter.py engine to include RSI (Relative Strength Index), MACD, and Bollinger Bands for tighter momentum confirmation.
+3. **Fundamental Data Integration:** Pulling P/E Ratios, Debt-to-Equity, and Revenue Growth metrics to combine technical breakouts with underlying company health.
+4. **Multi-Agent Debate Protocol:** Expanding the LangGraph architecture to include a "Bull Agent" and a "Bear Agent" that actively debate the stock before a "Portfolio Manager Agent" makes the final call.
+5. **Backtesting Engine:** Developing a standalone Python script to run historical data through the Sifter logic to empirically prove the algorithm's win rate and ROI over a multi-year period.
 
-### **3\. Environment Variables**
+## **The Stack**
 
-Create a .env file in the root directory and add your API keys:
+- **Frontend/UI:** Streamlit, Pandas
+- **Quantitative Engine:** yfinance, FastAPI
+- **AI & Orchestration:** LangChain, LangGraph, Groq API (Llama 3.3 70B)
+- **Database & RAG:** Supabase (PostgreSQL \+ pgvector), SentenceTransformers
 
-SUPABASE\_URL="https://your-project.supabase.co"  
-SUPABASE\_KEY="your-anon-publishable-key"  
-GROQ\_API\_KEY="gsk\_your\_groq\_api\_key"
+## **Local Setup**
 
-### **4\. Database Setup**
+1. Clone the repository.
+2. Install dependencies: `pip install \-r requirements.txt`
+3. Create a ` .env` file with your API keys:
 
-Run the SQL schema inside your Supabase SQL Editor to generate the tickers, daily\_metrics, news\_vault, and recommendations tables. Be sure to enable the vector extension:
+```sh
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_KEY=your_supabase_key
+   GROQ_API_KEY=your_groq_api_key
+```
 
-CREATE EXTENSION IF NOT EXISTS vector;
-
-### **5\. Run the Dashboard**
-
-Launch the Streamlit interface locally:
-
-python \-m streamlit run dashboard.py
+4. Run the dashboard: `sh streamlit run dashboard.py`
 
 ## **⚠️ Disclaimer**
 
-*This project is for educational and portfolio purposes only. The outputs generated by the AI are not financial advice. Always conduct your own due diligence before making investment decisions.*
+_This project is for educational and portfolio purposes only. The outputs generated by the AI are not financial advice. Always conduct your own due diligence before making investment decisions._
